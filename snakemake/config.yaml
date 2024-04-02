@@ -1,0 +1,7 @@
+#input_file: "../data/input_sra_acc/PRJNA733490.txt"
+input_file: "../data/input_sra_acc/PRJNA245811.txt"
+
+strategy: "PE"
+
+params:
+    illuminaclip: "ILLUMINACLIP:/services/tools/trimmomatic/0.38/adapters/TruSeq3-PE.fa:2:30:10"

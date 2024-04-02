@@ -1,0 +1,23 @@
+# Cluster parameters
+cluster: "pbs-submit.py -e {cluster.error} -o {cluster.output} -W group_list={cluster.group} -A {cluster.group} --depend \"{dependencies}\""
+cluster-status: "pbs-status.py"
+cluster-config: "cluster.yaml"
+jobscript: "pbs-jobscript.sh"
+max-jobs-per-second: 2
+max-status-checks-per-second: 5
+local-cores: 1
+immediate-submit: false
+latency-wait: 60
+rerun-incomplete: true
+printshellcmds: true
+
+
+# Other parameters
+use-envmodules: true
+restart-times: 1
+jobs: 50
+keep-going: true
+default-resources:
+  - walltime_h=5
+  - mem_gb=8
+

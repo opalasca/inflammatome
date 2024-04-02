@@ -1,0 +1,161 @@
+configfile: "config.yaml"
+
+import os
+
+# Read accession list from input file
+inputfile = open(config["input_file"], "r")
+SAMPLES = [line.rstrip() for line in inputfile]
+inputfile.close()
+
+# Store bioproject name from input file filename
+Bioproject = os.path.basename(config["input_file"]).split(".")[0]
+
+
+rule all:
+	input:
+		expand("../data/datasets/{Bioproject}/salmon/{sample}/quant.sf", Bioproject=Bioproject, sample = SAMPLES)
+                #expand("../data/datasets/{Bioproject}/counts.tsv", Bioproject=Bioproject)
+                
+if config["strategy"] == "PE":
+	rule fasterq:
+		output:
+			temp("../data/datasets/{Bioproject}/raw/{sample}_1.fastq"),
+			temp("../data/datasets/{Bioproject}/raw/{sample}_2.fastq")
+		params:
+			acc = "{sample}",
+			download_folder = "../data/datasets/" + Bioproject + "/raw"
+		shell:
+			"""
+			module load tools sratoolkit/3.0.0 
+			fasterq-dump {params.acc} -O {params.download_folder}
+			"""
+else:
+	rule fasterq:
+		output:
+			temp("../data/datasets/{Bioproject}/raw/{sample}.fastq")
+		params:
+			acc = "{sample}",
+			download_folder = "../data/datasets/" + Bioproject + "/raw"
+		shell:
+			"""
+			module load tools sratoolkit/3.0.0
+			fasterq-dump {input} -O {params.download_folder}
+			"""
+
+# params need to be checked
+if config["strategy"] == "PE":
+	rule trimmomatic:
+		input:
+			r1="../data/datasets/{Bioproject}/raw/{sample}_1.fastq",
+			r2= "../data/datasets/{Bioproject}/raw/{sample}_2.fastq"
+		output:
+			temp("../data/datasets/{Bioproject}/trimmed/{sample}_1.fastq"),
+			temp("../data/datasets/{Bioproject}/trimmed/{sample}_2.fastq"),
+			temp("../data/datasets/{Bioproject}/trimmed/{sample}_U_1.fastq"),
+			temp("../data/datasets/{Bioproject}/trimmed/{sample}_U_2.fastq")
+		log:
+			"../data/datasets/{Bioproject}/trimmed/{sample}_trimlog.txt"
+		params:
+			adapt=config["params"]["illuminaclip"]
+		threads: 8
+		shell:
+			"""
+			module load tools ngs java/1.8.0 jdk/21 trimmomatic/0.38
+			trimmomatic PE -threads {threads} -trimlog {log} {input.r1} {input.r2} {output[0]} {output[2]} {output[1]} {output[3]} {params.adapt} LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36  
+			"""
+else:
+	rule trimmomatic:
+		input:
+			"../data/datasets/{Bioproject}/raw/{sample}.fastq"
+		output:
+			temp("../data/datasets/{Bioproject}/trimmed/{sample}.fastq")
+		log:
+			"../data/datasets/{Bioproject}/trimmed/{sample}_trimlog.txt"
+		params:
+			adapt=config["params"]["illuminaclip"]
+		threads: 8
+		shell:
+			"""
+			module load tools ngs java/1.8.0 jdk/21 trimmomatic/0.38
+			trimmomatic SE -threads {threads} -trimlog {log} {input} {output} {params.adapt} LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+			"""
+
+# next download genome and transcriptome 
+# index with decoy
+
+rule salmon_idx_prep:
+	output:
+		trans="../data/ref/gencode.v45.transcripts.fa.gz",
+		gen="../data/ref/GRCh38.primary_assembly.genome.fa.gz",
+		gentrome="../data/ref/gentrome.fa.gz",
+		decoy="../data/ref/decoys.txt"
+	shell:
+		"""
+		[ ! -f {output.trans} ] && wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.transcripts.fa.gz -P ref
+		[ ! -f {output.gen} ] && wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz -P ref
+		# make decoy file
+		grep "^>" <(gunzip -c {output.gen}) | cut -d " " -f 1 > {output.decoy}
+		sed -i.bak -e 's/>//g' {output.decoy}
+		# make targets file (transcriptome before genome targets/decoys)
+		cat {output.trans} {output.gen} > {output.gentrome}      
+		"""
+
+# default kmer length is 31. If small mapping rate try smaller k
+rule salmon_idx:
+	input:
+		target="../data/ref/gentrome.fa.gz",
+		decoy="../data/ref/decoys.txt"
+	output:
+		directory("../data/transcriptome_idx")
+	threads: 12
+	shell:
+		"""
+		module load tools salmon/1.10.2
+		salmon index -t {input.target} -d {input.decoy} -p {threads} -i {output} --gencode
+		"""
+
+if config["strategy"] == "PE":
+	rule salmon_quant:
+		input:
+			r1="../data/datasets/{Bioproject}/trimmed/{sample}_1.fastq",
+			r2="../data/datasets/{Bioproject}/trimmed/{sample}_2.fastq",
+			idx="../data/transcriptome_idx"
+		output:
+			"../data/datasets/{Bioproject}/salmon/{sample}/quant.sf"
+		params:
+			outdir=directory("../data/datasets/{Bioproject}/salmon/{sample}")
+		threads: 5
+		shell:
+			"""
+			module load tools salmon/1.10.2
+			salmon quant -i {input.idx} -l A -1 {input.r1} -2 {input.r2} -p {threads} --validateMappings -o {params.outdir}
+			"""
+else:
+	rule salmon_quant:
+		input:
+			r="../data/datasets/{Bioproject}/trimmed/{sample}.fastq",
+			idx="../data/transcriptome_idx"
+		output:
+			"../data/datasets/{Bioproject}/salmon/{sample}/quant.sf"
+		params:
+			outdir=directory("../data/datasets/{Bioproject}/salmon/{sample}")
+		threads: 5
+		shell:
+			"""
+			module load tools salmon/1.10.2
+			salmon quant -i {input.idx} -l A -r {input.r} -p {threads} --validateMappings -o {params.outdir}
+			"""
+
+rule create_counts:
+	input:
+		count_file = expand("../data/datasets/{Bioproject}/salmon/{sample}/quant.sf", Bioproject=Bioproject, sample = SAMPLES),
+	output:
+		"../data/datasets/{Bioproject}/counts.tsv"
+	shell:
+		"""
+		module load gcc
+		module load intel/perflibs
+		module load R/4.3.0
+		Rscript createCounts.R {Bioproject}
+		"""
+

@@ -1,0 +1,5 @@
+module load gcc
+module load intel/perflibs
+module load R/4.3.0
+
+Rscript createCounts.R PRJNA245811
