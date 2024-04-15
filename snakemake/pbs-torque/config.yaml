@@ -1,5 +1,5 @@
 # Cluster parameters
-cluster: "pbs-submit.py -e {cluster.error} -o {cluster.output} -W group_list={cluster.group} -A {cluster.group} --depend \"{dependencies}\""
+cluster: "pbs-submit.py -e {cluster.error} -o {cluster.output} -W group_list={cluster.group} -A {cluster.group}"
 cluster-status: "pbs-status.py"
 cluster-config: "cluster.yaml"
 jobscript: "pbs-jobscript.sh"
