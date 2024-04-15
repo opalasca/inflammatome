@@ -24,10 +24,11 @@ if config["strategy"] == "PE":
 		params:
 			acc = "{sample}",
 			download_folder = "../data/datasets/" + Bioproject + "/raw"
+		threads: 6
 		shell:
 			"""
 			module load tools sratoolkit/3.0.0 
-			fasterq-dump {params.acc} -O {params.download_folder}
+			fasterq-dump {params.acc} -O {params.download_folder} -e {threads}
 			"""
 else:
 	rule fasterq:
@@ -36,10 +37,11 @@ else:
 		params:
 			acc = "{sample}",
 			download_folder = "../data/datasets/" + Bioproject + "/raw"
+		threads: 6
 		shell:
 			"""
 			module load tools sratoolkit/3.0.0
-			fasterq-dump {input} -O {params.download_folder}
+			fasterq-dump {input} -O {params.download_folder} -e {threads}
 			"""
 
 # params need to be checked
@@ -91,8 +93,8 @@ rule salmon_idx_prep:
 		decoy="../data/ref/decoys.txt"
 	shell:
 		"""
-		[ ! -f {output.trans} ] && wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.transcripts.fa.gz -P ref
-		[ ! -f {output.gen} ] && wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz -P ref
+		[ ! -f {output.trans} ] && wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.transcripts.fa.gz -P ../data/ref
+		[ ! -f {output.gen} ] && wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.primary_assembly.genome.fa.gz -P ../data/ref
 		# make decoy file
 		grep "^>" <(gunzip -c {output.gen}) | cut -d " " -f 1 > {output.decoy}
 		sed -i.bak -e 's/>//g' {output.decoy}
