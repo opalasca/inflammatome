@@ -41,7 +41,7 @@ else:
 		shell:
 			"""
 			module load tools sratoolkit/3.0.0
-			fasterq-dump {input} -O {params.download_folder} -e {threads}
+			fasterq-dump {params.acc} -O {params.download_folder} -e {threads}
 			"""
 
 # params need to be checked
@@ -158,6 +158,6 @@ rule create_counts:
 		module load gcc
 		module load intel/perflibs
 		module load R/4.3.0
-		Rscript createCounts.R {Bioproject}
+		Rscript scripts/createCounts.R {Bioproject}
 		"""
 
