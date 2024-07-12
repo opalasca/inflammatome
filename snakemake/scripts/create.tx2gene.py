@@ -1,10 +1,12 @@
+#!/usr/bin/env python3
+import gzip
 
-fasta_file = "gencode.v45.transcripts.fa"
+fasta_file = "../data/ref/gencode.v45.transcripts.fa.gz"
 # Output file for Tx2gene mapping
-output_file = "Tx2gene.txt"
+output_file = "../data/ref/tx2gene/Tx2gene.txt"
 
-# Open the input FASTA file
-with open(fasta_file, "r") as fasta:
+# Open the input gzipped FASTA file
+with gzip.open(fasta_file, "rt") as fasta:
     # Open the output file for writing
     with open(output_file, "w") as out_file:
         # Write column headers

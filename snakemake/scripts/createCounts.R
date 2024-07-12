@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-datadir = "../../data/"
+datadir = "../data/"
 
 library("DESeq2")
 library("tximport")
@@ -10,7 +10,7 @@ dataset=args[1]
 
 salmdir = paste0(datadir,"/datasets/",dataset,"/salmon/")
 
-tx2gene <- read.csv(paste(datadir,"ref/tr2gene/Tx2gene.txt",sep=""),sep="\t",header=FALSE)
+tx2gene <- read.csv(paste(datadir,"ref/tx2gene/Tx2gene.txt",sep=""),sep="\t",header=FALSE)
 
 get_files_salmon<-function(dir,sample_list){
   files <- file.path(dir, sample_list, "quant.sf")
