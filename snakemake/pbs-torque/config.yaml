@@ -18,6 +18,6 @@ restart-times: 1
 jobs: 50
 keep-going: true
 default-resources:
-  - walltime_h=5
-  - mem_gb=8
+  - walltime="5:00:00"
+  - mem="16gb"
 

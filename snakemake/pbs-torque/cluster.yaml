@@ -1,4 +1,4 @@
 __default__:
- group: ku_10024
- output: /home/projects/ku_10024/people/palasca/inflammatome/logs/clusterlogs/
- error: /home/projects/ku_10024/people/palasca/inflammatome/logs/clusterlogs/
+ group: ku_00183
+ output: /home/projects/ku_00183/data/inflammatome/logs/clusterlogs/
+ error: /home/projects/ku_00183/data/inflammatome/logs/clusterlogs/

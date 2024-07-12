@@ -13,8 +13,8 @@ Bioproject = os.path.basename(config["input_file"]).split(".")[0]
 
 rule all:
 	input:
-		expand("../data/datasets/{Bioproject}/salmon/{sample}/quant.sf", Bioproject=Bioproject, sample = SAMPLES)
-                #expand("../data/datasets/{Bioproject}/counts.tsv", Bioproject=Bioproject)
+		#expand("../data/datasets/{Bioproject}/salmon/{sample}/quant.sf", Bioproject=Bioproject, sample = SAMPLES)
+                expand("../data/datasets/{Bioproject}/counts.tsv", Bioproject=Bioproject)
                 
 if config["strategy"] == "PE":
 	rule fasterq:
@@ -24,7 +24,7 @@ if config["strategy"] == "PE":
 		params:
 			acc = "{sample}",
 			download_folder = "../data/datasets/" + Bioproject + "/raw"
-		threads: 6
+		threads: 8
 		shell:
 			"""
 			module load tools sratoolkit/3.0.0 
@@ -37,7 +37,7 @@ else:
 		params:
 			acc = "{sample}",
 			download_folder = "../data/datasets/" + Bioproject + "/raw"
-		threads: 6
+		threads: 8
 		shell:
 			"""
 			module load tools sratoolkit/3.0.0
@@ -148,13 +148,23 @@ else:
 			salmon quant -i {input.idx} -l A -r {input.r} -p {threads} --validateMappings -o {params.outdir}
 			"""
 
+rule create_tx2gene:
+	output:
+		"../data/ref/tx2gene/Tx2gene.txt"
+	shell:
+		"""
+		scripts/create.tx2gene.py 
+		"""
+
 rule create_counts:
 	input:
 		count_file = expand("../data/datasets/{Bioproject}/salmon/{sample}/quant.sf", Bioproject=Bioproject, sample = SAMPLES),
+		tx2gene = "../data/ref/tx2gene/Tx2gene.txt"
 	output:
 		"../data/datasets/{Bioproject}/counts.tsv"
 	shell:
 		"""
+		module load tools
 		module load gcc
 		module load intel/perflibs
 		module load R/4.3.0
